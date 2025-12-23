@@ -1,0 +1,13 @@
+spring:
+  profiles:
+    active: secrets
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+
+  kafka-streams:
+    application-id: wikimedia-analytics
+    properties:
+      default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      commit.interval.ms: 1000

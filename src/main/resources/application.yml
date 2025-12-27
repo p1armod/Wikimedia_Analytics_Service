@@ -5,9 +5,21 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
-  kafka-streams:
-    application-id: wikimedia-analytics
-    properties:
-      default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
-      commit.interval.ms: 1000
+    streams:
+      application-id: wikimedia-analytics
+      auto-startup: true
+      state-dir: /tmp/kafka-streams
+      properties:
+        default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.value.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+        default.deserialization.exception.handler: org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
+        commit.interval.ms: 1000
+
+server:
+  port: 8081
+
+logging:
+  level:
+    root: INFO
+    org.apache.kafka.streams: INFO
+    org.example.Stream: INFO

@@ -23,3 +23,6 @@ logging:
     root: INFO
     org.apache.kafka.streams: INFO
     org.example.Stream: INFO
+    org.springframework.web.socket: DEBUG
+    org.springframework.messaging: DEBUG
+    org.springframework.web.socket.messaging: DEBUG

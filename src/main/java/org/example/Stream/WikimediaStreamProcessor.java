@@ -9,6 +9,8 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.TimeWindows;
+import org.example.Model.EditCountEvent;
+import org.example.Service.RealtimeUpdatesService;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +24,7 @@ public class WikimediaStreamProcessor {
 
     private final StreamsBuilder builder;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final RealtimeUpdatesService realtimeUpdatesService;
 
     @PostConstruct
     public void buildTopology() {
@@ -29,7 +32,7 @@ public class WikimediaStreamProcessor {
         KStream<String, String> stream = builder.stream("wikimedia.raw");
 
         stream
-                .peek((k, v) -> log.info("RAW={}", v))
+//                .peek((k, v) -> log.info("RAW={}", v))
                 .mapValues(v -> {
                     try {
                         return objectMapper.readTree(v);
@@ -45,11 +48,9 @@ public class WikimediaStreamProcessor {
                 .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)))
                 .count(Materialized.as("edit-count-by-user"))
                 .toStream()
-                .foreach((k, v) ->
-                        log.info(
-                                "User={}, Count={}, WindowStart={}",
-                                k.key(), v, k.window().start()
-                        )
-                );
+                .foreach((k, v) ->{
+                    EditCountEvent editEvent = new EditCountEvent(k.key(),v,k.window().start());
+                    realtimeUpdatesService.publish(editEvent);
+                });
     }
 }

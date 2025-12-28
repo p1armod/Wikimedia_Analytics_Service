@@ -13,6 +13,6 @@ public class RealtimeUpdatesService {
     private final SimpMessagingTemplate messagingTemplate;
 
     public void publish(EditCountEvent event){
-        messagingTemplate.convertAndSend("topic/edits", event);
+        messagingTemplate.convertAndSend("/topic/edits", event);
     }
 }

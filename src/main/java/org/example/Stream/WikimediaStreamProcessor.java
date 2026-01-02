@@ -55,11 +55,17 @@ public class WikimediaStreamProcessor {
 //                });
 
         buildBotVsHuman(events);
-//        buildWikiMetric(events);
+        buildWikiMetric(events);
 //        buildMajorVsMinor(events);
 //        buildEditSize(events);
 //        buildEditOverTime(events);
 //        buildArrivalDelay(events);
+    }
+
+    private void buildWikiMetric(KStream<String, WikimediaEvent> events) {
+        events
+                .groupBy((k, v) -> v.wiki)
+                .count(Materialized.as("wiki-count-store"));
     }
 
     private void buildBotVsHuman(KStream<String, WikimediaEvent> events) {

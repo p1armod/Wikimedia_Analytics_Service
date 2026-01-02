@@ -57,9 +57,26 @@ public class WikimediaStreamProcessor {
         buildBotVsHuman(events);
         buildWikiMetric(events);
         buildMajorVsMinor(events);
-//        buildEditSize(events);
+        buildEditSize(events);
 //        buildEditOverTime(events);
 //        buildArrivalDelay(events);
+    }
+
+    private void buildEditSize(KStream<String, WikimediaEvent> events) {
+        events
+                .filter((k,v) -> v.editSize >0 && v.editSize < 100)
+                .groupBy((k,v)->v.wiki)
+                .count(Materialized.as("small-count-store"));
+
+        events
+                .filter((k,v) -> v.editSize > 100 && v.editSize < 500)
+                .groupBy((k,v)->v.wiki)
+                .count(Materialized.as("medium-count-store"));
+
+        events
+                .filter((k,v) -> v.editSize > 500)
+                .groupBy((k,v)->v.wiki)
+                .count(Materialized.as("large-count-store"));
     }
 
     private void buildMajorVsMinor(KStream<String, WikimediaEvent> events) {

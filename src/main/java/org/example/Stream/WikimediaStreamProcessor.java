@@ -10,6 +10,7 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.example.Model.EditCountEvent;
+import org.example.Model.WikimediaEvent;
 import org.example.Service.RealtimeUpdatesService;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.stereotype.Component;
@@ -31,26 +32,45 @@ public class WikimediaStreamProcessor {
 
         KStream<String, String> stream = builder.stream("wikimedia.raw");
 
-        stream
-//                .peek((k, v) -> log.info("RAW={}", v))
+        KStream<String, WikimediaEvent> events = stream
                 .mapValues(v -> {
                     try {
-                        return objectMapper.readTree(v);
+                        ObjectMapper mapper = new ObjectMapper();
+                        return mapper.readValue(v,WikimediaEvent.class);
                     } catch (Exception e) {
                         return null;
                     }
-                })
-                .filter((k, v) -> v != null)
-                .filter((k, v) -> "edit".equals(v.get("type").asText()))
-                .selectKey((k, v) -> v.get("user").asText())
-                .mapValues(JsonNode::toString) // 🔥 critical fix
-                .groupByKey()
-                .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)))
-                .count(Materialized.as("edit-count-by-user"))
-                .toStream()
-                .foreach((k, v) ->{
-                    EditCountEvent editEvent = new EditCountEvent(k.key(),v,k.window().start());
-                    realtimeUpdatesService.publish(editEvent);
                 });
+//                .filter((k, v) -> v != null)
+//                .filter((k, v) -> "edit".equals(v.get("type").asText()))
+//                .selectKey((k, v) -> v.get("user").asText())
+//                .mapValues(JsonNode::toString) // 🔥 critical fix
+//                .groupByKey()
+//                .windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1)))
+//                .count(Materialized.as("edit-count-by-user"))
+//                .toStream()
+//                .foreach((k, v) ->{
+//                    EditCountEvent editEvent = new EditCountEvent(k.key(),v,k.window().start());
+//                    realtimeUpdatesService.publish(editEvent);
+//                });
+
+        buildBotVsHuman(events);
+//        buildWikiMetric(events);
+//        buildMajorVsMinor(events);
+//        buildEditSize(events);
+//        buildEditOverTime(events);
+//        buildArrivalDelay(events);
+    }
+
+    private void buildBotVsHuman(KStream<String, WikimediaEvent> events) {
+        events
+                .filter((k,v) -> v.bot)
+                .groupBy((k,v)-> "BOT")
+                .count(Materialized.as("bot-count-store"));
+
+        events
+                .filter((k,v) -> !v.bot)
+                .groupBy((k,v)-> "HUMAN")
+                .count(Materialized.as("human-count-store"));
     }
 }

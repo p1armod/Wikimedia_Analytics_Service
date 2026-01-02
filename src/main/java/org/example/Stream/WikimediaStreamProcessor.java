@@ -81,13 +81,13 @@ public class WikimediaStreamProcessor {
 
     private void buildMajorVsMinor(KStream<String, WikimediaEvent> events) {
         events
-                .filter((k,v)-> v.editSize > 100)
-                .groupBy((k,v)-> v.wiki)
+                .filter((k,v)-> !v.minor)
+                .groupBy((k,v)-> "MAJOR")
                 .count(Materialized.as("major-count-store"));
 
         events
-                .filter((k,v)-> v.editSize < 100)
-                .groupBy((k,v)-> v.wiki)
+                .filter((k,v)-> v.minor)
+                .groupBy((k,v)-> "MAJOR")
                 .count(Materialized.as("minor-count-store"));
     }
 

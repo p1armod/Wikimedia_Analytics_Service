@@ -66,7 +66,12 @@ public class WikimediaStreamProcessor {
         events
                 .filter((k,v)-> v.editSize > 100)
                 .groupBy((k,v)-> v.wiki)
-                .count(Materialized.as("major-minor-store"));
+                .count(Materialized.as("major-count-store"));
+
+        events
+                .filter((k,v)-> v.editSize < 100)
+                .groupBy((k,v)-> v.wiki)
+                .count(Materialized.as("minor-count-store"));
     }
 
     private void buildWikiMetric(KStream<String, WikimediaEvent> events) {

@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class EditCountEvent {
-    private String user;
-    private long count;
-    private long windowStart;
+    public String user;
+    public long count;
+    public long windowStart;
 }

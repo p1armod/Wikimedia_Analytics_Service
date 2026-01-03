@@ -5,14 +5,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.TimeWindows;
+import org.apache.kafka.streams.state.WindowStore;
+import org.example.Model.DelayMetricDTO;
 import org.example.Model.EditCountEvent;
 import org.example.Model.WikimediaEvent;
 import org.example.Service.RealtimeUpdatesService;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
+import org.springframework.kafka.support.serializer.JsonSerde;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -27,6 +34,9 @@ public class WikimediaStreamProcessor {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RealtimeUpdatesService realtimeUpdatesService;
 
+    Serde<DelayMetricDTO> delayMetricSerde =
+            new JsonSerde<>(DelayMetricDTO.class);
+
     @PostConstruct
     public void buildTopology() {
 
@@ -35,8 +45,8 @@ public class WikimediaStreamProcessor {
         KStream<String, WikimediaEvent> events = stream
                 .mapValues(v -> {
                     try {
-                        ObjectMapper mapper = new ObjectMapper();
-                        return mapper.readValue(v,WikimediaEvent.class);
+
+                        return objectMapper.readValue(v,WikimediaEvent.class);
                     } catch (Exception e) {
                         return null;
                     }
@@ -58,8 +68,41 @@ public class WikimediaStreamProcessor {
         buildWikiMetric(events);
         buildMajorVsMinor(events);
         buildEditSize(events);
-//        buildArrivalDelay(events);
+        buildArrivalDelay(events);
         buildEditType(events);
+    }
+
+    private void buildArrivalDelay(KStream<String, WikimediaEvent> events) {
+
+        events
+                .groupBy(
+                        (k, v) -> "DELAY",
+                        Grouped.with(Serdes.String(), null)
+                )
+
+                .windowedBy(
+                        TimeWindows.ofSizeWithNoGrace(Duration.ofMinutes(1))
+                                .advanceBy(Duration.ofSeconds(5))
+                )
+
+                .aggregate(
+                        DelayMetricDTO::new,
+
+                        (key, event, agg) -> {
+                            long delay = System.currentTimeMillis() - event.eventTime;
+
+                            agg.count++;
+                            agg.sum += delay;
+                            agg.maxDelay = Math.max(agg.maxDelay, delay);
+
+                            return agg;
+                        },
+
+                        Materialized.<String, DelayMetricDTO, WindowStore<Bytes, byte[]>>
+                                        as("delay-metric-store")
+                                .withKeySerde(Serdes.String())
+                                .withValueSerde(delayMetricSerde)
+                );
     }
 
     private void buildEditType(KStream<String, WikimediaEvent> events) {

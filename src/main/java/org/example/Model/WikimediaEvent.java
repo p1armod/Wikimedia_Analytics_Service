@@ -6,4 +6,5 @@ public class WikimediaEvent {
     public boolean minor;
     public long eventTime;
     public int editSize;
+    public String type;
 }

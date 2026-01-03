@@ -59,6 +59,24 @@ public class WikimediaStreamProcessor {
         buildMajorVsMinor(events);
         buildEditSize(events);
 //        buildArrivalDelay(events);
+        buildEditType(events);
+    }
+
+    private void buildEditType(KStream<String, WikimediaEvent> events) {
+        events
+                .filter((k,v) -> v.type == "edit")
+                .groupBy((k,v) -> v.type)
+                .count(Materialized.as("edit-count-store"));
+
+        events
+                .filter((k,v) -> v.type == "new")
+                .groupBy((k,v) -> v.type)
+                .count(Materialized.as("new-count-store"));
+
+        events
+                .filter((k,v) -> v.type == "log")
+                .groupBy((k,v) -> v.type)
+                .count(Materialized.as("log-count-store"));
     }
 
     private void buildEditSize(KStream<String, WikimediaEvent> events) {

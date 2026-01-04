@@ -107,17 +107,17 @@ public class WikimediaStreamProcessor {
 
     private void buildEditType(KStream<String, WikimediaEvent> events) {
         events
-                .filter((k,v) -> v.type == "edit")
+                .filter((k,v) -> "edit".equals(v.type))
                 .groupBy((k,v) -> v.type)
                 .count(Materialized.as("edit-count-store"));
 
         events
-                .filter((k,v) -> v.type == "new")
+                .filter((k,v) -> "new".equals(v.type))
                 .groupBy((k,v) -> v.type)
                 .count(Materialized.as("new-count-store"));
 
         events
-                .filter((k,v) -> v.type == "log")
+                .filter((k,v) -> "log".equals(v.type))
                 .groupBy((k,v) -> v.type)
                 .count(Materialized.as("log-count-store"));
     }

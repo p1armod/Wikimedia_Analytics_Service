@@ -147,7 +147,7 @@ public class WikimediaStreamProcessor {
 
         events
                 .filter((k,v)-> v.minor)
-                .groupBy((k,v)-> "MAJOR")
+                .groupBy((k,v)-> "MINOR")
                 .count(Materialized.as("minor-count-store"));
     }
 

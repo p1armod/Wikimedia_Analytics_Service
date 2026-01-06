@@ -2,6 +2,7 @@ package org.example.Service;
 
 
 import lombok.RequiredArgsConstructor;
+import org.example.Model.DashboardMessageDTO;
 import org.example.Model.EditCountEvent;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ public class RealtimeUpdatesService {
 
     private final SimpMessagingTemplate messagingTemplate;
 
-    public void publish(EditCountEvent event){
+    public void publish(DashboardMessageDTO event){
         messagingTemplate.convertAndSend("/topic/edits", event);
     }
 }

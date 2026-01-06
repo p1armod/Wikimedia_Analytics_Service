@@ -52,8 +52,8 @@ public class WikimediaStreamProcessor {
                     } catch (Exception e) {
                         return null;
                     }
-                });
-//                .filter((k, v) -> v != null)
+                })
+                .filter((k, v) -> v != null);
 //                .filter((k, v) -> "edit".equals(v.get("type").asText()))
 //                .selectKey((k, v) -> v.get("user").asText())
 //                .mapValues(JsonNode::toString) // 🔥 critical fix

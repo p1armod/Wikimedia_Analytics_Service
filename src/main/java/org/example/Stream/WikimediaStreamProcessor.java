@@ -14,15 +14,16 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.state.WindowStore;
-import org.example.Model.DelayMetricDTO;
-import org.example.Model.EditCountEvent;
-import org.example.Model.WikimediaEvent;
+import org.example.Model.*;
+import org.example.Service.MetricQueryService;
 import org.example.Service.RealtimeUpdatesService;
 import org.springframework.kafka.annotation.EnableKafkaStreams;
 import org.springframework.kafka.support.serializer.JsonSerde;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.HashMap;
 
 @Component
 @RequiredArgsConstructor
@@ -33,6 +34,7 @@ public class WikimediaStreamProcessor {
     private final StreamsBuilder builder;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RealtimeUpdatesService realtimeUpdatesService;
+    private final MetricQueryService metricQueryService;
 
     Serde<DelayMetricDTO> delayMetricSerde =
             new JsonSerde<>(DelayMetricDTO.class);
@@ -167,5 +169,19 @@ public class WikimediaStreamProcessor {
                 .filter((k,v) -> !v.bot)
                 .groupBy((k,v)-> "HUMAN")
                 .count(Materialized.as("human-count-store"));
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    private void scheduled() {
+        DashboardDTO dto = new DashboardDTO(
+                metricQueryService.getHumanVsBot(),
+                metricQueryService.getMajorVsMinor(),
+                new HashMap<>(),
+                new HashMap<>(),
+                metricQueryService.getWikiMetrics(),
+                new DelayMetricDTO()
+        );
+        DashboardMessageDTO<DashboardDTO> dashboardMessageDTO = new DashboardMessageDTO<DashboardDTO>("All Metrics", dto);
+        realtimeUpdatesService.publish(dashboardMessageDTO);
     }
 }
